@@ -1,0 +1,45 @@
+
+name: Build NEON RUSH APK
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'neon_rush_android_project.zip'
+      - '.github/workflows/build-apk.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Extract Android project
+        run: |
+          unzip -o neon_rush_android_project.zip -d project
+          echo "PROJECT_DIR=$(find project -name settings.gradle -o -name settings.gradle.kts | head -n 1 | xargs dirname)" >> "$GITHUB_ENV"
+
+      - name: Build APK
+        run: |
+          cd "$PROJECT_DIR"
+          gradle --no-daemon assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: NEON-RUSH-APK
+          path: project/**/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
